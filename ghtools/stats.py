@@ -3,7 +3,7 @@
 
 To generate a report for IPython 2.0, run:
 
-    python github_stats.py --milestone 2.0 --since-tag rel-1.0.0
+    github-stats --milestone 2.0 --since-tag rel-1.0.0
 """
 
 from __future__ import print_function
@@ -100,7 +100,7 @@ def report(issues, show_urls=False):
 # Main script
 #-----------------------------------------------------------------------------
 
-if __name__ == "__main__":
+def main():
     # deal with unicode
     if sys.version_info < (3,):
         sys.stdout = codecs.getwriter('utf8')(sys.stdout)
@@ -222,3 +222,6 @@ if __name__ == "__main__":
         print()
         print('Issues (%d):\n' % n_issues)
         report(issues, show_urls)
+
+if __name__ == '__main__':
+    main()

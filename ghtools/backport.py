@@ -6,20 +6,20 @@ Usage: backport_pr.py todo [org/repository] branch [PR] [PR2]
 
 e.g.:
 
-    python -m ghtools.backport apply 123 155
+    backport-pr apply 123 155
 
 to backport PRs #123 and #155 onto branch 0.13.1
 
 or
 
-    python -m ghtools.backport todo --milestone=2.1
+    backport-pr todo --milestone=2.1
 
 to see what PRs are marked for backport with milestone=2.1 that have yet to be applied
 to branch 2.x
 
 or
 
-    python -m ghtools.backport --project jupyter/notebook apply 0.13.1 123 155
+    backport-pr --project jupyter/notebook apply 0.13.1 123 155
 
 to backport PRs #123 and #155 of the `jupyter/notebook` repo onto branch 0.13.1
 of that repo.
