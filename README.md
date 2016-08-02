@@ -1,6 +1,6 @@
-# ghtools
+# GHPRO
 
-Utilities for working with GitHub (IPython/Jupyter-related, mostly).
+A couple of utilities for working with **G**it**H**ub **PRO**jects (IPython/Jupyter-related, mostly).
 
 This takes some utilities developed for the maintenance of [IPython](https://github.com/ipython/ipython),
 and makes them a bit more reusable as a standalone package.
@@ -16,6 +16,23 @@ Tools include:
 
 - summary stats about releases
 - manage and apply backports of pull requests
+
+For example, in your repo:
+
+    github-stats --milestone 4.3
+    
+To get a report about GitHub contributions for milestone 4.3.
+
+Or
+
+    backport-pr todo --milestone 4.4
+
+to see what PRs are marked for 4.4 that still need backporting,
+or
+
+    backport-pr apply 4.x 1234
+
+to backport PR #1234 onto branch 4.x
 
 ## Origins
 
