@@ -1,4 +1,9 @@
-Copyright (c) 2016, Min RK
+Originals Copyright (c) 2016, IPython Development Team
+
+Forked from IPython `tools/` directory at commit 99d29c2d556b9889b5040874e5e673ae2e5a032a, August 2, 2016,
+used under BSD 3-Clause License.
+
+Copyright (c) 2016, Min RK, Jupyter Contributors
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
