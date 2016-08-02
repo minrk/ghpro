@@ -39,7 +39,7 @@ from subprocess import Popen, PIPE
 import git
 import requests
 
-from .gh_api import (
+from .api import (
     get_issues_list,
     get_pull_request,
     get_pull_request_files,

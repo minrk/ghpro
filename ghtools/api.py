@@ -19,7 +19,7 @@ try:
 except ImportError:
     print("cache not available, install `requests_cache` for caching.", file=sys.stderr)
 else:
-    requests_cache.install_cache("gh_api", expire_after=3600)
+    requests_cache.install_cache("/tmp/ghtools", expire_after=3600)
 
 # Keyring stores passwords by a 'username', but we're not storing a username and
 # password

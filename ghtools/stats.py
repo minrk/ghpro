@@ -18,10 +18,11 @@ from argparse import ArgumentParser
 from datetime import datetime, timedelta
 from subprocess import check_output
 
-from gh_api import (
+from .api import (
     get_paged_request, make_auth_header, get_pull_request, is_pull_request,
     get_milestone_id, get_issues_list, get_authors,
 )
+
 #-----------------------------------------------------------------------------
 # Globals
 #-----------------------------------------------------------------------------
