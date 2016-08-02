@@ -47,6 +47,8 @@ from .api import (
     get_milestone_id,
 )
 
+from .utils import guess_project
+
 
 def find_rejects(root='.'):
     for dirname, dirs, files in os.walk(root):
@@ -118,7 +120,6 @@ def already_backported(repo, branch, since_tag=None):
     if since_tag is None:
         since_tag = repo.git.describe(branch, '--abbrev=0')
     lines = repo.git.log('%s..%s' % (since_tag, branch), '--oneline')
-    print(lines)
 
     return set(int(num) for num in backport_re.findall(lines))
 
@@ -145,38 +146,6 @@ def should_backport(project, milestone=None):
     return should_backport
 
 
-def common_arguments(parser):
-    parser.add_argument('--branch', help="The target branch for backporting")
-    parser.add_argument('--milestone', help="The milestone used to signify what should be backported")
-    parser.add_argument('--project', help="The GitHub project to use (e.g. jupyter/notebook)")
-
-# match jupyter/notebook in:
-# https://github.com/jupyter/notebook.git
-# git@github.com:jupyter/notebook.git
-
-_project_pat = re.compile('.*github.com[:/](.*)\.git', re.IGNORECASE)
-
-def guess_project(path='.'):
-    """Guess the GitHub project
-    
-    First, check upstream for people who use:
-    
-    - upstream=project, origin=mine
-    
-    Then, use origin for:
-    
-    - origin=project, mine=mine
-    
-    """
-    repo = git.Repo(path)
-    remotes = [ r for r in repo.remotes if r.name == 'upstream' ]
-    if not remotes:
-        remotes = [ r for r in repo.remotes if r.name == 'origin' ]
-    remote = remotes[0]
-    project = _project_pat.match(remote.url).group(1)
-    return project
-
-
 def tobackport(project, branch, milestone, since):
     already = already_backported(git.Repo('.'), branch, since)
     should = should_backport(project, milestone)
@@ -184,8 +153,6 @@ def tobackport(project, branch, milestone, since):
     todo = should.difference(already)
     shouldnt = already.difference(should)
     ok = already.intersection(should)
-    print('')
-    print(already,)
     if shouldnt:
         still_shouldnt = []
         for num in sorted(shouldnt):
@@ -196,7 +163,7 @@ def tobackport(project, branch, milestone, since):
             else:
                 still_shouldnt.append(num)
         if still_shouldnt:
-            print("The following PRs have been backported, but are not marked for backport:")
+            print("The following PRs have been backported, but perhaps shouldn't be:")
             for pr in still_shouldnt:
                 print(pr)
     if ok:

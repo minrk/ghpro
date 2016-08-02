@@ -5,9 +5,6 @@ To generate a report for IPython 2.0, run:
 
     python github_stats.py --milestone 2.0 --since-tag rel-1.0.0
 """
-#-----------------------------------------------------------------------------
-# Imports
-#-----------------------------------------------------------------------------
 
 from __future__ import print_function
 
@@ -22,17 +19,10 @@ from .api import (
     get_paged_request, make_auth_header, get_pull_request, is_pull_request,
     get_milestone_id, get_issues_list, get_authors,
 )
-
-#-----------------------------------------------------------------------------
-# Globals
-#-----------------------------------------------------------------------------
+from .utils import guess_project
 
 ISO8601 = "%Y-%m-%dT%H:%M:%SZ"
 PER_PAGE = 100
-
-#-----------------------------------------------------------------------------
-# Functions
-#-----------------------------------------------------------------------------
 
 def round_hour(dt):
     return dt.replace(minute=0,second=0,microsecond=0)
@@ -128,7 +118,7 @@ if __name__ == "__main__":
     parser.add_argument('--days', type=int,
         help="The number of days of data to summarize (use this or --since-tag)."
     )
-    parser.add_argument('--project', type=str, default="ipython/ipython",
+    parser.add_argument('--project', type=str, default=None,
         help="The project to summarize."
     )
     parser.add_argument('--links', action='store_true', default=False,
@@ -136,6 +126,8 @@ if __name__ == "__main__":
     )
     
     opts = parser.parse_args()
+    if not opts.project:
+        opts.project = guess_project('.')
     tag = opts.since_tag
     
     # set `since` from days or git tag
@@ -160,7 +152,7 @@ if __name__ == "__main__":
     milestone = opts.milestone
     project = opts.project
 
-    print("fetching GitHub stats since %s (tag: %s, milestone: %s)" % (since, tag, milestone), file=sys.stderr)
+    print("fetching GitHub stats since %s (milestone: %s, since: %s)" % (since, milestone, tag), file=sys.stderr)
     if milestone:
         milestone_id = get_milestone_id(project=project, milestone=milestone,
                 auth=True)
@@ -186,7 +178,7 @@ if __name__ == "__main__":
     print()
     since_day = since.strftime("%Y/%m/%d")
     today = datetime.today().strftime("%Y/%m/%d")
-    print("GitHub stats for %s - %s (tag: %s)" % (since_day, today, tag))
+    print("GitHub stats for %s - %s (milestone: %s)" % (since_day, today, milestone))
     print()
     print("These lists are automatically generated, and may be incomplete or contain duplicates.")
     print()
