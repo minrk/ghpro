@@ -210,7 +210,6 @@ def main():
         sys.exit("Specify one of `todo` or `action` to perform.")
     
     path = '.'
-    milestone = opts.milestone
     if opts.branch:
         branch = opts.branch
     else:
@@ -223,10 +222,10 @@ def main():
     if opts.action == 'apply':
         for pr in opts.pulls:
             print("Backport PR#{pr} onto {branch}".format(pr=pr, branch=branch))
-            if backport_pr(path, project, branch, pr):
+            if backport_pr(path, branch, pr, project):
                 sys.exit("Backporting PR#{pr} onto {branch} failed".format(pr=pr, branch=branch))
     elif opts.action == 'todo':
-        tobackport(project=project, branch=branch, milestone=milestone, since=opts.since)
+        tobackport(project=project, branch=branch, milestone=opts.milestone, since=opts.since)
 
 if __name__ == '__main__':
     main()
