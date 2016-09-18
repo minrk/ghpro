@@ -213,7 +213,7 @@ def main():
     if opts.branch:
         branch = opts.branch
     else:
-        branch = milestone.split('.')[0] + '.x'
+        branch = opts.milestone.split('.')[0] + '.x'
     if opts.project:
         project = opts.project
     else:
