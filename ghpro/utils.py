@@ -7,7 +7,7 @@ import git
 # https://github.com/jupyter/notebook.git
 # git@github.com:jupyter/notebook.git
 
-_project_pat = re.compile('.*github.com[:/](.*)(\.git)?', re.IGNORECASE)
+_project_pat = re.compile('.*github.com[:/](.+?)(\.git)?$', re.IGNORECASE)
 
 def guess_project(path='.'):
     """Guess the GitHub project for a given repo
