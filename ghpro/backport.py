@@ -31,12 +31,14 @@ from __future__ import print_function
 import argparse
 from distutils.version import LooseVersion as V
 import os
+import pipes
 import re
 import sys
 
 from subprocess import Popen, PIPE
 
 import git
+import mock
 import requests
 
 from .api import (
@@ -50,57 +52,70 @@ from .api import (
 from .utils import guess_project
 
 
-def find_rejects(root='.'):
-    for dirname, dirs, files in os.walk(root):
-        for fname in files:
-            if fname.endswith('.rej'):
-                yield os.path.join(dirname, fname)
-
-
 def backport_pr(path, branch, num, project):
+    """Backport a pull request
+
+    Uses git cherry-pick -m 1 <merge-sha> to apply changes.
+
+    In case of failure, resolve conflicts and re-run.
+    On second run, will finish `git cherry-pick --continue`
+    and write the commit message.
+
+    Parameters
+    ----------
+
+    path: path to the repo
+    branch: branch on which to backport
+    num: pull request number
+    project: GitHub project (e.g. ipython/ipython)
+
+    Returns exit code (0 on success, 1 on failure)
+    """
     repo = git.Repo(path)
     current_branch = repo.active_branch.name
     if branch != current_branch:
         repo.git.checkout(branch)
-    repo.git.pull()
+
+    # pull if tracking
+    if repo.git.for_each_ref('--format=%(upstream:short)', 'refs/heads/%s' % branch):
+        repo.git.pull()
+    else:
+        print("Branch %s not tracking upstream." % branch, file=sys.stderr)
+
     pr = get_pull_request(project, num, auth=True)
-    files = get_pull_request_files(project, num, auth=True)
-    patch_url = pr['patch_url']
+    sha = pr['merge_commit_sha']
     title = pr['title']
     description = pr['body']
-    
+
     # remove mentions from description, to avoid pings:
-    description = description.replace('@', '_')
+    description = description.replace('@', ' ').replace('#', ' ')
     
-    fname = "PR%i.patch" % num
-    if os.path.exists(fname):
-        print("using patch from {fname}".format(**locals()))
-        with open(fname, 'rb') as f:
-            patch = f.read()
+    status = repo.git.status()
+    if 'cherry-picking' in status:
+        if 'cherry-picking commit %s' % sha[:6] not in status:
+            print("I do not appear to be resuming the cherry-pick of %s" % sha, file=sys.stderr)
+            print(status, file=sys.stderr)
+            return 1
+        print("Continuing cherry-pick of %s" % sha)
+        # finish interrupted cherry-pick
+        args = ('--continue',)
     else:
-        r = requests.get(patch_url)
-        r.raise_for_status()
-        patch = r.content
-
-    msg = "Backport PR #%i: %s" % (num, title) + '\n\n' + description
-    check = Popen(['git', 'apply', '--check', '--verbose'], stdin=PIPE)
-    a,b = check.communicate(patch)
-
-    if check.returncode:
-        print("patch did not apply, saving to {fname}".format(**locals()))
-        print("edit {fname} until `cat {fname} | git apply --check` succeeds".format(**locals()))
-        print("then run tools/backport_pr.py {num} again".format(**locals()))
-        if not os.path.exists(fname):
-            with open(fname, 'wb') as f:
-                f.write(patch)
+        print("Cherry-picking %s" % sha)
+        args = ('-m', '1', sha)
+    
+    try:
+        with mock.patch.dict('os.environ', {'GIT_EDITOR': 'true'}):
+            repo.git.cherry_pick(*args)
+    except Exception as e:
+        print('\n' + e.stderr.decode('utf8', 'replace'), file=sys.stderr)
+        print('\n' + repo.git.status(), file=sys.stderr)
+        cmd = ' '.join(pipes.quote(arg) for arg in sys.argv)
+        print('\nPatch did not apply. Resolve conflicts (add, not commit), then re-run `%s`' % cmd, file=sys.stderr)
         return 1
 
-    p = Popen(['git', 'apply'], cwd=path, stdin=PIPE)
-    p.communicate(patch)
-
-    filenames = [ f['filename'] for f in files ]
-    repo.git.add(*filenames)
-    repo.git.commit('-m', msg)
+    # write the commit message
+    msg = "Backport PR #%i: %s" % (num, title) + '\n\n' + description
+    repo.git.commit('--amend', '-m', msg)
 
     print("PR #%i applied, with msg:" % num)
     print()
@@ -111,6 +126,7 @@ def backport_pr(path, branch, num, project):
         repo.git.checkout(current_branch)
 
     return 0
+
 
 backport_re = re.compile(r"(?:[Bb]ackport|[Mm]erge).*?(\d+)")
 
@@ -221,7 +237,7 @@ def main():
     
     if opts.action == 'apply':
         for pr in opts.pulls:
-            print("Backport PR#{pr} onto {branch}".format(pr=pr, branch=branch))
+            print("Backport PR #{pr} onto {branch}".format(pr=pr, branch=branch))
             if backport_pr(path, branch, pr, project):
                 sys.exit("Backporting PR#{pr} onto {branch} failed".format(pr=pr, branch=branch))
     elif opts.action == 'todo':
