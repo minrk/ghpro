@@ -30,16 +30,13 @@ from __future__ import print_function
 
 import argparse
 from distutils.version import LooseVersion as V
-import os
 import pipes
 import re
 import sys
 
-from subprocess import Popen, PIPE
 
 import git
 import mock
-import requests
 
 from .api import (
     get_issues_list,
