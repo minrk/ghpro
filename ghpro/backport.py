@@ -125,7 +125,7 @@ def backport_pr(path, branch, num, project):
     return 0
 
 
-backport_re = re.compile(r"(?:[Bb]ackport|[Mm]erge).*?(\d+)")
+backport_re = re.compile(r"(?:[Bb]ackport|[Mm]erge).*?(\d+)(?:[^.])")
 
 
 def already_backported(repo, branch, since_tag=None):
@@ -162,7 +162,6 @@ def should_backport(project, milestone=None):
 def tobackport(project, branch, milestone, since):
     already = already_backported(git.Repo('.'), branch, since)
     should = should_backport(project, milestone)
-    
     todo = should.difference(already)
     shouldnt = already.difference(should)
     ok = already.intersection(should)
