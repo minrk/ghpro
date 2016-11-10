@@ -41,7 +41,7 @@ class Obj(dict):
 token = None
 user = None
 
-def set_username_and_token(*, project, username, token):
+def set_username_and_token(project, username, token):
     keyring.set_password('ghlogin', project, user)
     keyring.set_password('github', project, token)
 
@@ -101,13 +101,12 @@ def get_username_and_auth_token(*, project=fake_username, store=True):
                             auth=(user, pw),
                             data=json.dumps(auth_request),
                             headers={'X-GitHub-OTP':otp})
-
     if response.status_code == 422:
         print("Such a token is already set on GitHub for %s see https://github.com/settings/tokens"% project)
     response.raise_for_status()
     token = json.loads(response.text)['token']
     if store:
-        set_username_and_token(project, user, token)
+        set_username_and_token(project=project, username=user, token=token)
     return user, token
 
 def make_auth_header():
