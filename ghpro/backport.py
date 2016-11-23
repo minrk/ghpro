@@ -73,9 +73,11 @@ def backport_pr(path, branch, num, project):
     if branch != current_branch:
         repo.git.checkout(branch)
 
+    status = repo.git.status()
     # pull if tracking
     if repo.git.for_each_ref('--format=%(upstream:short)', 'refs/heads/%s' % branch):
-        repo.git.pull()
+        if 'cherry-picking' not in status:
+            repo.git.pull()
     else:
         print("Branch %s not tracking upstream." % branch, file=sys.stderr)
 
@@ -86,8 +88,7 @@ def backport_pr(path, branch, num, project):
 
     # remove mentions from description, to avoid pings:
     description = description.replace('@', ' ').replace('#', ' ')
-    
-    status = repo.git.status()
+
     if 'cherry-picking' in status:
         if 'cherry-picking commit %s' % sha[:6] not in status:
             print("I do not appear to be resuming the cherry-pick of %s" % sha, file=sys.stderr)
