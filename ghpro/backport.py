@@ -113,7 +113,7 @@ def backport_pr(path, branch, num, project):
 
     # write the commit message
     msg = "Backport PR #%i: %s" % (num, title) + '\n\n' + description
-    repo.git.commit('--amend', '-m', msg)
+    repo.git.commit('--amend', '-s', '-m', msg)
 
     print("PR #%i applied, with msg:" % num)
     print()
