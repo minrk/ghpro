@@ -84,7 +84,7 @@ def backport_pr(path, branch, num, project):
     pr = get_pull_request(project, num, auth=True)
     sha = pr['merge_commit_sha']
     title = pr['title']
-    description = pr['body']
+    description = pr['body'] or ''
 
     # remove mentions from description, to avoid pings:
     description = description.replace('@', ' ').replace('#', ' ')
