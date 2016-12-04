@@ -126,7 +126,7 @@ def backport_pr(path, branch, num, project):
     return 0
 
 
-backport_re = re.compile(r"(?:[Bb]ackport|[Mm]erge).*?(\d+)(?:[^.])")
+backport_re = re.compile(r"(?:[Bb]ackport|[Mm]erge).*?\#(\d+)(?:[^.])")
 
 
 def already_backported(repo, branch, since_tag=None):
