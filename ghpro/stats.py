@@ -135,7 +135,7 @@ def main():
         since = datetime.utcnow() - timedelta(days=opts.days)
     else:
         if not tag:
-            tag = check_output(['git', 'describe', '--abbrev=0']).strip().decode('utf8')
+            tag = check_output(['git', 'describe', '--tags','--abbrev=0']).strip().decode('utf8')
         cmd = ['git', 'log', '-1', '--format=%ai', tag]
         tagday, tz = check_output(cmd).strip().decode('utf8').rsplit(' ', 1)
         since = datetime.strptime(tagday, "%Y-%m-%d %H:%M:%S")
