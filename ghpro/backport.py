@@ -215,7 +215,7 @@ def main():
     todo_parser.add_argument('--branch', '-b', help="The target branch for backporting. Default: milestone major version.x")
     todo_parser.add_argument('--since', help="The since-tag for checking whether pull requests have been backported `git describe` is used by default.")
 
-    apply_parser = subparsers.add_parser('apply', help="Show a list of pull requests that need backporting for a particular release.")
+    apply_parser = subparsers.add_parser('apply', help="Backport one or more pull requests to a given branch.")
     apply_parser.add_argument('branch', help="The target branch for backporting. Default: milestone major version.x")
     apply_parser.add_argument('pulls', nargs='+', type=int, help="The pull requests to backport")
     opts = parser.parse_args()
