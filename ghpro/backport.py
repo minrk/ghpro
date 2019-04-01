@@ -105,7 +105,7 @@ def backport_pr(path, branch, num, project):
         with mock.patch.dict('os.environ', {'GIT_EDITOR': 'true'}):
             repo.git.cherry_pick(*args)
     except Exception as e:
-        print('\n' + e.stderr.decode('utf8', 'replace'), file=sys.stderr)
+        print('\n' + e.stderr, file=sys.stderr)
         print('\n' + repo.git.status(), file=sys.stderr)
         cmd = ' '.join(pipes.quote(arg) for arg in sys.argv)
         print('\nPatch did not apply. Resolve conflicts (add, not commit), then re-run `%s`' % cmd, file=sys.stderr)
