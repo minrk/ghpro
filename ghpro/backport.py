@@ -39,6 +39,7 @@ import git
 import mock
 
 from .api import (
+    get_authors,
     get_issues_list,
     get_pull_request,
     get_pull_request_files,
@@ -111,9 +112,12 @@ def backport_pr(path, branch, num, project):
         print('\nPatch did not apply. Resolve conflicts (add, not commit), then re-run `%s`' % cmd, file=sys.stderr)
         return 1
 
-    # write the commit message
+    # update the cherry picked merge commit
     msg = "Backport PR #%i: %s" % (num, title) + '\n\n' + description
-    repo.git.commit('--amend', '-s', '-m', msg)
+    authors = get_authors(pr)
+    if len(authors) > 1:
+        msg + '\n' + "".join([f"\nCo-authored-by: {a}" for a in authors[1:]])
+    repo.git.commit('--amend', '-s', '--author', authors[0], '-m', msg)
 
     print("PR #%i applied, with msg:" % num)
     print()

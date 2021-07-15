@@ -11,10 +11,7 @@ import re
 import sys
 
 import requests
-import getpass
 import json
-
-import keyring
 
 try:
     import requests_cache
@@ -38,84 +35,18 @@ class Obj(dict):
     def __setattr__(self, name, val):
         self[name] = val
 
-token = None
-user = None
-
-def set_username_and_token(project, username, token):
-    keyring.set_password('ghlogin', project, user)
-    keyring.set_password('github', project, token)
-
-
-def get_auth_token(*, project=fake_username, store=True):
-    """Get the authentication token for current user.
-
-
-    Get it from the keychain if available, otherwise prompt for username, 
-    password, Two Factor Authentication if necessary. Record a token on the keychain
-    for this particular project. And store all the information in the keychain. 
-    """
-    _, token = get_username_and_auth_token(project=project, store=store)
-    return token
-
-def get_username_and_auth_token(*, project=fake_username, store=True):
-    """Get username and the authentication token for GitHub.
-
-    If stored in the keyring, get them and return it. Other wise prompt for it,
-    as well as 2fa if necessary and store them in keyring before returning it.
-    """
-    global token
-    global user
-
-    if token is not None and user is not None:
-        return user,token
-
-    import keyring
-    token = keyring.get_password('github', project)
-    user = keyring.get_password('ghlogin', project)
-    if token is not None and user is not None:
-        return user, token
-
-    print("Please enter your github login and password.  Password is not "
-          "stored, only used to get an oAuth token. You can revoke this at "
-          "any time on Github. At the following URL:"
-          "https://github.com/settings/tokens\n"
-          "Username: ", file=sys.stderr, end='')
-    user = input('')
-    pw = getpass.getpass("Password: ", stream=sys.stderr)
-
-    auth_request = {
-      "scopes": [
-        "public_repo",
-        "gist"
-      ],
-      "note": "Auth requests for %s" % project,
-      "note_url": "https://github.com/minrk/ghpro",
-    }
-    response = requests.post('https://api.github.com/authorizations',
-                            auth=(user, pw), data=json.dumps(auth_request))
-    if response.status_code == 401 and \
-            'required;' in response.headers.get('X-GitHub-OTP', ''):
-        print("Your login API requested a one time password", file=sys.stderr)
-        otp = getpass.getpass("One Time Password: ", stream=sys.stderr)
-        response = requests.post('https://api.github.com/authorizations',
-                            auth=(user, pw),
-                            data=json.dumps(auth_request),
-                            headers={'X-GitHub-OTP':otp})
-    if response.status_code == 422:
-        print("Such a token is already set on GitHub for %s see https://github.com/settings/tokens"% project)
-    response.raise_for_status()
-    token = json.loads(response.text)['token']
-    if store:
-        set_username_and_token(project=project, username=user, token=token)
-    return user, token
 
 def make_auth_header():
-    return {'Authorization': 'token ' + get_auth_token()}
+    if not os.environ.get("GITHUB_ACCESS_TOKEN"):
+        sys.exit("Please set an environment variable named GITHUB_ACCESS_TOKEN to a token created via https://github.com/settings/tokens having the scopes `public_repo` and `gist`.")
+    return {'Authorization': 'token ' + os.environ["GITHUB_ACCESS_TOKEN"]}
+
 
 def post_issue_comment(project, num, body):
     url = 'https://api.github.com/repos/{project}/issues/{num}/comments'.format(project=project, num=num)
     payload = json.dumps({'body': body})
     requests.post(url, data=payload, headers=make_auth_header())
+
 
 def post_gist(content, description='', filename='file', auth=False):
     """Post some text to a Gist, and return the URL."""
@@ -135,6 +66,7 @@ def post_gist(content, description='', filename='file', auth=False):
     response_data = json.loads(response.text)
     return response_data['html_url']
 
+
 def get_pull_request(project, num, auth=False):
     """get pull request info  by number
     """
@@ -148,6 +80,7 @@ def get_pull_request(project, num, auth=False):
     response.raise_for_status()
     return json.loads(response.text, object_hook=Obj)
 
+
 def get_pull_request_files(project, num, auth=False):
     """get list of files in a pull request"""
     url = "https://api.github.com/repos/{project}/pulls/{num}/files".format(project=project, num=num)
@@ -157,8 +90,10 @@ def get_pull_request_files(project, num, auth=False):
         header = None
     return get_paged_request(url, headers=header)
 
+
 element_pat = re.compile(r'<(.+?)>')
 rel_pat = re.compile(r'rel=[\'"](\w+)[\'"]')
+
 
 def get_paged_request(url, headers=None, **params):
     """get a full list, handling APIv3's paging"""
@@ -179,6 +114,7 @@ def get_paged_request(url, headers=None, **params):
             break
     return results
 
+
 def get_pulls_list(project, auth=False, **params):
     """get pull request list"""
     params.setdefault("state", "closed")
@@ -189,6 +125,7 @@ def get_pulls_list(project, auth=False, **params):
         headers = None
     pages = get_paged_request(url, headers=headers, **params)
     return pages
+
 
 def get_issues_list(project, auth=False, **params):
     """get issues list"""
@@ -201,6 +138,7 @@ def get_issues_list(project, auth=False, **params):
     pages = get_paged_request(url, headers=headers, **params)
     return pages
 
+
 def get_milestones(project, auth=False, **params):
     params.setdefault('state', 'all')
     url = "https://api.github.com/repos/{project}/milestones".format(project=project)
@@ -211,6 +149,7 @@ def get_milestones(project, auth=False, **params):
     milestones = get_paged_request(url, headers=headers, **params)
     return milestones
 
+
 def get_milestone_id(project, milestone, auth=False, **params):
     milestones = get_milestones(project, auth=auth, **params)
     for mstone in milestones:
@@ -219,9 +158,11 @@ def get_milestone_id(project, milestone, auth=False, **params):
     else:
         raise ValueError("milestone %s not found" % milestone)
 
+
 def is_pull_request(issue):
     """Return True if the given issue is a pull request."""
     return bool(issue.get('pull_request', {}).get('html_url', None))
+
 
 def get_authors(pr):
     print("getting authors for #%i" % pr['number'], file=sys.stderr)
@@ -235,9 +176,9 @@ def get_authors(pr):
         authors.append("%s <%s>" % (author['name'], author['email']))
     return authors
 
+
 # encode_multipart_formdata is from urllib3.filepost
 # The only change is to iter_fields, to enforce S3's required key ordering
-
 def iter_fields(fields):
     fields = fields.copy()
     for key in ('key', 'acl', 'Filename', 'success_action_status', 'AWSAccessKeyId',
@@ -245,6 +186,7 @@ def iter_fields(fields):
         yield (key, fields.pop(key))
     for (k,v) in fields.items():
         yield k,v
+
 
 def encode_multipart_formdata(fields, boundary=None):
     """
