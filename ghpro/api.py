@@ -163,14 +163,23 @@ def is_pull_request(issue):
     """Return True if the given issue is a pull request."""
     return bool(issue.get('pull_request', {}).get('html_url', None))
 
-
-def get_authors(pr):
-    print("getting authors for #%i" % pr['number'], file=sys.stderr)
+def get_authors(issue):
+    print("getting authors for #%i" % issue["number"], file=sys.stderr)
     h = make_auth_header()
-    r = requests.get(pr['commits_url'], headers=h)
+    authors = []
+    comments = get_paged_request(issue["comments_url"])
+    for comment in comments:
+        r = requests.get(comment["user"]["url"], headers=h)
+        r.raise_for_status()
+        user = r.json()
+        authors.append("%s <%s>" % (user["name"], user["email"] or ""))
+
+    if not is_pull_request(issue):
+        return authors
+
+    r = requests.get(issue["commits_url"], headers=h)
     r.raise_for_status()
     commits = r.json()
-    authors = []
     for commit in commits:
         author = commit['commit']['author']
         authors.append("%s <%s>" % (author['name'], author['email']))

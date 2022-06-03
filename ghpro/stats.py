@@ -190,13 +190,15 @@ def main():
         since_tag = tag+'..'
         cmd = ['git', 'log', '--oneline', since_tag]
         ncommits += len(check_output(cmd).splitlines())
-        
+
         author_cmd = ['git', 'log', '--use-mailmap', "--format=* %aN", since_tag]
         all_authors.extend(check_output(author_cmd).decode('utf-8', 'replace').splitlines())
-    
+
     pr_authors = []
     for pr in pulls:
         pr_authors.extend(get_authors(pr))
+    for issue in issues:
+        pr_authors.extend(get_authors(issue))
     ncommits = len(pr_authors) + ncommits - len(pulls)
     author_cmd = ['git', 'check-mailmap'] + pr_authors
     with_email = check_output(author_cmd).decode('utf-8', 'replace').splitlines()
